@@ -269,10 +269,22 @@
                     }
                 }
                 
+                // Add weekend background
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday = 0, Saturday = 6
+                const weekendBg = isWeekend ? 'bg-gray-200/75' : '';
+                
                 timelineHtml += `
                     <div class="absolute ${borderClass}" style="left: ${x}px; top: 30px; height: ${totalHeight}px;">
                     </div>
                 `;
+                
+                // Add weekend background overlay
+                if (isWeekend) {
+                    timelineHtml += `
+                        <div class="absolute ${weekendBg}" style="left: ${x}px; top: 30px; width: ${dayWidth}px; height: ${totalHeight}px; pointer-events: none; opacity: 0.5;">
+                        </div>
+                    `;
+                }
             });
             
             // Add events
