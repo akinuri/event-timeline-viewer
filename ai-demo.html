@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Timeline Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .timeline-hour-line {
+            border-top: 1px solid #e5e7eb;
+        }
+        .timeline-hour-line:nth-child(odd) {
+            background-color: #f9fafb;
+        }
+        .event-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #3b82f6;
+            border: 2px solid white;
+            position: absolute;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .event-dot:hover {
+            transform: scale(1.2);
+            background-color: #1d4ed8;
+        }
+        .timeline-container {
+            min-height: 600px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-7xl mx-auto mb-[10vh]">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Event Timeline Viewer</h1>
+        
+        <!-- Input Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <label for="bulkInput" class="block text-sm font-medium text-gray-700 mb-2">
+                Paste Events (Format: YYYY-MM-DD HH:MM:SS +ZZZZ)
+            </label>
+            <textarea 
+                id="bulkInput" 
+                rows="6" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                placeholder="2025-09-15 14:52:53 +0300"
+            ></textarea>
+            <div class="mt-2 flex gap-2">
+                <button 
+                    onclick="loadEventsFromTextarea()" 
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Load Events
+                </button>
+                <button 
+                    onclick="clearEvents()" 
+                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Clear All
+                </button>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Timeline</h2>
+            <div id="timelineContainer" class="timeline-container border rounded-lg relative overflow-auto" style="min-height: 600px;">
+                <div id="noEventsMessage" class="flex items-center justify-center h-full text-gray-500 text-lg">
+                    Add some events to see the timeline
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let events = [];
+        
+        // External API for setting events
+        window.setEvents = function(eventArray) {
+            events = eventArray.map(event => ({
+                date: new Date(event.date),
+                name: event.name || 'Event',
+                id: event.id || Date.now() + Math.random()
+            }));
+            updateTimeline();
+        };
+        
+        window.addEvent = function(event) {
+            events.push({
+                date: new Date(event.date),
+                name: event.name || 'Event',
+                id: event.id || Date.now() + Math.random()
+            });
+            updateTimeline();
+        };
+        
+        window.clearEvents = function() {
+            events = [];
+            updateTimeline();
+        };
+        
+        function loadEventsFromTextarea() {
+            const input = document.getElementById('bulkInput');
+            const lines = input.value.trim().split('\n');
+            
+            const newEvents = [];
+            lines.forEach(line => {
+                const eventText = line.trim();
+                if (eventText) {
+                    const event = parseEventText(eventText);
+                    if (event) {
+                        newEvents.push(event);
+                        console.log('Parsed event:', event);
+                    } else {
+                        console.log('Failed to parse:', eventText);
+                    }
+                }
+            });
+            
+            if (newEvents.length > 0) {
+                events = newEvents;
+                updateTimeline();
+                console.log(`Loaded ${newEvents.length} events successfully!`);
+            } else {
+                alert('No valid events found. Please check the format.');
+            }
+        }
+        
+        function parseEventText(text) {
+            // Try to parse different formats
+            let dateTime, name = 'Event';
+            
+            // Format: YYYY-MM-DD HH:MM:SS +ZZZZ - Event Name
+            const withNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})\s*-\s*(.+)$/);
+            if (withNameMatch) {
+                dateTime = withNameMatch[1];
+                name = withNameMatch[2];
+            } else {
+                // Format: YYYY-MM-DD HH:MM:SS +ZZZZ
+                const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})$/);
+                if (dateMatch) {
+                    dateTime = dateMatch[1];
+                } else {
+                    // Fallback: try older formats for backward compatibility
+                    const oldWithNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s*-\s*(.+)$/);
+                    if (oldWithNameMatch) {
+                        dateTime = oldWithNameMatch[1];
+                        name = oldWithNameMatch[2];
+                    } else {
+                        const oldDateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
+                        if (oldDateMatch) {
+                            dateTime = oldDateMatch[1];
+                        } else {
+                            return null;
+                        }
+                    }
+                }
+            }
+            
+            const date = new Date(dateTime);
+            if (isNaN(date.getTime())) {
+                return null;
+            }
+            
+            return {
+                date: date,
+                name: name,
+                id: Date.now() + Math.random()
+            };
+        }
+        
+        function updateTimeline() {
+            const container = document.getElementById('timelineContainer');
+            const noEventsMessage = document.getElementById('noEventsMessage');
+            
+            if (events.length === 0) {
+                container.innerHTML = '<div id="noEventsMessage" class="flex items-center justify-center h-full text-gray-500 text-lg">Add some events to see the timeline</div>';
+                return;
+            }
+            
+            // Hide no events message
+            if (noEventsMessage) {
+                noEventsMessage.style.display = 'none';
+            }
+            
+            // Get date range
+            const sortedEvents = [...events].sort((a, b) => a.date - b.date);
+            const startDate = new Date(sortedEvents[0].date);
+            startDate.setHours(0, 0, 0, 0);
+            
+            const endDate = new Date(sortedEvents[sortedEvents.length - 1].date);
+            endDate.setHours(23, 59, 59, 999);
+            
+            // Generate all dates in range
+            const dateRange = [];
+            const currentDate = new Date(startDate);
+            while (currentDate <= endDate) {
+                dateRange.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            const dayWidth = 80; // pixels per day
+            const hourHeight = 24; // pixels per hour
+            const totalWidth = dateRange.length * dayWidth;
+            const totalHeight = 24 * hourHeight;
+            
+            // Create timeline HTML
+            let timelineHtml = `<div class="relative" style="width: ${totalWidth}px; height: ${totalHeight}px; margin-left: 50px;">`;
+            
+            // Add hour labels and grid lines
+            for (let hour = 0; hour < 24; hour++) {
+                const y = hour * hourHeight;
+                timelineHtml += `
+                    <div class="timeline-hour-line absolute w-full" style="top: ${y}px; height: ${hourHeight}px;">
+                        <span class="absolute text-xs text-gray-500 bg-white px-1 rounded z-20" style="left: -45px; top: 1px;">${hour.toString().padStart(2, '0')}:00</span>
+                    </div>
+                `;
+            }
+            
+            // Add date labels
+            dateRange.forEach((date, index) => {
+                const x = index * dayWidth;
+                const year = String(date.getFullYear()).slice(-2);
+                const dateStr = year + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+                timelineHtml += `
+                    <div class="absolute border-l border-gray-300" style="left: ${x}px; top: 0; height: 100%;">
+                        <div class="absolute -top-5 left-0 text-xs font-medium text-gray-700 bg-white px-1 py-0.5 rounded shadow-sm whitespace-nowrap">
+                            ${dateStr}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add events
+            events.forEach(event => {
+                const eventDate = new Date(event.date);
+                eventDate.setHours(0, 0, 0, 0);
+                
+                const dayIndex = dateRange.findIndex(date => date.getTime() === eventDate.getTime());
+                if (dayIndex !== -1) {
+                    const x = dayIndex * dayWidth + dayWidth / 2;
+                    const y = event.date.getHours() * hourHeight + (event.date.getMinutes() / 60) * hourHeight;
+                    
+                    const timeStr = event.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    timelineHtml += `
+                        <div class="event-dot" style="left: ${x - 6}px; top: ${y - 6}px;" 
+                             title="${event.name} - ${timeStr}">
+                        </div>
+                    `;
+                }
+            });
+            
+            timelineHtml += '</div>';
+            
+            // Add padding to container
+            container.innerHTML = `
+                <div class="p-8 pt-12">
+                    ${timelineHtml}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
