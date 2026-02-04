@@ -13,15 +13,31 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background-color: #3b82f6;
             border: 2px solid white;
             position: absolute;
             z-index: 10;
             cursor: pointer;
         }
+        .event-dot.blue {
+            background-color: #3b82f6;
+        }
+        .event-dot.green {
+            background-color: #10b981;
+        }
+        .event-dot.red {
+            background-color: #ef4444;
+        }
         .event-dot:hover {
             transform: scale(1.2);
+        }
+        .event-dot.blue:hover {
             background-color: #1d4ed8;
+        }
+        .event-dot.green:hover {
+            background-color: #047857;
+        }
+        .event-dot.red:hover {
+            background-color: #dc2626;
         }
         .timeline-container {
             min-height: 600px;
@@ -56,20 +72,51 @@
         
         <!-- Input Section -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <label for="bulkInput" class="block text-sm font-medium text-gray-700 mb-2">
-                Paste Events (Format: YYYY-MM-DD HH:MM:SS +ZZZZ)
-            </label>
-            <textarea 
-                id="bulkInput" 
-                rows="6" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                placeholder="2025-09-15 14:52:53 +0300"
-            ></textarea>
-            <div class="mt-2 flex gap-2">
+            <div class="grid grid-cols-3 gap-4">
+                <!-- Red Events -->
+                <div>
+                    <label for="redEvents" class="block text-sm font-medium text-red-600 mb-2">
+                        Red Events (Format: YYYY-MM-DD HH:MM:SS +ZZZZ)
+                    </label>
+                    <textarea 
+                        id="redEvents" 
+                        rows="6" 
+                        class="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500" 
+                        placeholder="2025-09-15 18:15:00 +0300"
+                    ></textarea>
+                </div>
+                
+                <!-- Green Events -->
+                <div>
+                    <label for="greenEvents" class="block text-sm font-medium text-green-600 mb-2">
+                        Green Events (Format: YYYY-MM-DD HH:MM:SS +ZZZZ)
+                    </label>
+                    <textarea 
+                        id="greenEvents" 
+                        rows="6" 
+                        class="w-full px-3 py-2 border border-green-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" 
+                        placeholder="2025-09-15 16:30:00 +0300"
+                    ></textarea>
+                </div>
+                
+                <!-- Blue Events -->
+                <div>
+                    <label for="blueEvents" class="block text-sm font-medium text-blue-600 mb-2">
+                        Blue Events (Format: YYYY-MM-DD HH:MM:SS +ZZZZ)
+                    </label>
+                    <textarea 
+                        id="blueEvents" 
+                        rows="6" 
+                        class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                        placeholder="2025-09-15 14:52:53 +0300"
+                    ></textarea>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2 justify-center">
                 <button 
-                    onclick="loadEventsFromTextarea()" 
+                    onclick="loadAllEvents()" 
                     class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                    Load Events
+                    Load All Events
                 </button>
                 <button 
                     onclick="clearEvents()" 
@@ -98,6 +145,7 @@
             events = eventArray.map(event => ({
                 date: new Date(event.date),
                 name: event.name || 'Event',
+                type: event.type || 'blue',
                 id: event.id || Date.now() + Math.random()
             }));
             updateTimeline();
@@ -107,6 +155,7 @@
             events.push({
                 date: new Date(event.date),
                 name: event.name || 'Event',
+                type: event.type || 'blue',
                 id: event.id || Date.now() + Math.random()
             });
             updateTimeline();
@@ -117,20 +166,48 @@
             updateTimeline();
         };
         
-        function loadEventsFromTextarea() {
-            const input = document.getElementById('bulkInput');
-            const lines = input.value.trim().split('\n');
+        function loadAllEvents() {
+            const blueInput = document.getElementById('blueEvents');
+            const greenInput = document.getElementById('greenEvents');
+            const redInput = document.getElementById('redEvents');
             
             const newEvents = [];
-            lines.forEach(line => {
+            
+            // Load blue events
+            const blueLines = blueInput.value.trim().split('\n');
+            blueLines.forEach(line => {
                 const eventText = line.trim();
                 if (eventText) {
-                    const event = parseEventText(eventText);
+                    const event = parseEventText(eventText, 'blue');
                     if (event) {
                         newEvents.push(event);
-                        console.log('Parsed event:', event);
-                    } else {
-                        console.log('Failed to parse:', eventText);
+                        console.log('Parsed blue event:', event);
+                    }
+                }
+            });
+            
+            // Load green events
+            const greenLines = greenInput.value.trim().split('\n');
+            greenLines.forEach(line => {
+                const eventText = line.trim();
+                if (eventText) {
+                    const event = parseEventText(eventText, 'green');
+                    if (event) {
+                        newEvents.push(event);
+                        console.log('Parsed green event:', event);
+                    }
+                }
+            });
+            
+            // Load red events
+            const redLines = redInput.value.trim().split('\n');
+            redLines.forEach(line => {
+                const eventText = line.trim();
+                if (eventText) {
+                    const event = parseEventText(eventText, 'red');
+                    if (event) {
+                        newEvents.push(event);
+                        console.log('Parsed red event:', event);
                     }
                 }
             });
@@ -144,7 +221,7 @@
             }
         }
         
-        function parseEventText(text) {
+        function parseEventText(text, eventType = 'blue') {
             // Try to parse different formats
             let dateTime, name = 'Event';
             
@@ -183,6 +260,7 @@
             return {
                 date: date,
                 name: name,
+                type: eventType,
                 id: Date.now() + Math.random()
             };
         }
@@ -310,8 +388,9 @@
                     const y = event.date.getHours() * hourHeight + (event.date.getMinutes() / 60) * hourHeight + 30; // Offset by 30px for date header
                     
                     const timeStr = event.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    const eventType = event.type || 'blue';
                     timelineHtml += `
-                        <div class="event-dot" style="left: ${x - 6}px; top: ${y - 6}px;" 
+                        <div class="event-dot ${eventType}" style="left: ${x - 6}px; top: ${y - 6}px;" 
                              title="${event.name} - ${timeStr}">
                         </div>
                     `;
