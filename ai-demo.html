@@ -28,6 +28,16 @@
         }
         .timeline-container {
             min-height: 600px;
+            position: relative;
+        }
+        .hour-labels {
+            position: absolute;
+            left: 0;
+            top: 38px;
+            width: 50px;
+            background: white;
+            z-index: 30;
+            border-right: 1px solid #e5e7eb;
         }
     </style>
 </head>
@@ -63,7 +73,7 @@
         <!-- Timeline -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Timeline</h2>
-            <div id="timelineContainer" class="timeline-container border rounded-lg relative overflow-auto" style="min-height: 600px;">
+            <div id="timelineContainer" class="timeline-container border rounded-lg relative" style="min-height: 600px;">
                 <div id="noEventsMessage" class="flex items-center justify-center h-full text-gray-500 text-lg">
                     Add some events to see the timeline
                 </div>
@@ -203,18 +213,26 @@
             const totalWidth = dateRange.length * dayWidth;
             const totalHeight = 24 * hourHeight;
             
-            // Create timeline HTML
-            let timelineHtml = `<div class="relative" style="width: ${totalWidth}px; height: ${totalHeight}px; margin-left: 50px;">`;
-            
-            // Add hour labels and grid lines
+            // Create timeline HTML with separate hour labels and scrollable content
+            let hourLabelsHtml = `<div class="hour-labels" style="height: ${totalHeight}px;">`;
             for (let hour = 0; hour < 24; hour++) {
                 const y = hour * hourHeight;
-                timelineHtml += `
-                    <div class="timeline-hour-line absolute w-full" style="top: ${y}px; height: ${hourHeight}px;">
-                        <span class="absolute text-xs text-gray-500 bg-white px-1 rounded z-20" style="left: -45px; top: 1px;">${hour.toString().padStart(2, '0')}:00</span>
+                hourLabelsHtml += `
+                    <div class="absolute text-xs text-gray-500 bg-white px-1 rounded" style="top: ${y + 10}px; right: 2px;">
+                        ${hour.toString().padStart(2, '0')}:00
                     </div>
                 `;
             }
+            hourLabelsHtml += '</div>';
+            
+            // Create simplified timeline with proper positioning
+            let timelineHtml = `
+                <!-- Single scrollable container for both day labels and timeline -->
+                <div style="margin-left: 50px; overflow-x: auto; position: relative;">
+                    <div class="relative" style="width: ${totalWidth}px; height: ${totalHeight + 30}px;">
+                        
+                        <!-- Date labels that scroll with content -->
+                        <div class="absolute w-full" style="top: 0; height: 30px; background: white; border-bottom: 1px solid #e5e7eb;">`;
             
             // Add date labels
             dateRange.forEach((date, index) => {
@@ -222,10 +240,28 @@
                 const year = String(date.getFullYear()).slice(-2);
                 const dateStr = year + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
                 timelineHtml += `
-                    <div class="absolute border-l border-gray-300" style="left: ${x}px; top: 0; height: 100%;">
-                        <div class="absolute -top-5 left-0 text-xs font-medium text-gray-700 bg-white px-1 py-0.5 rounded shadow-sm whitespace-nowrap">
-                            ${dateStr}
-                        </div>
+                    <div class="absolute text-xs font-medium text-gray-700 px-1 whitespace-nowrap" style="left: ${x + 2}px; top: 8px;">
+                        ${dateStr}
+                    </div>
+                `;
+            });
+            
+            timelineHtml += `</div>`;
+            
+            // Add hour grid lines
+            for (let hour = 0; hour < 24; hour++) {
+                const y = hour * hourHeight + 30; // Offset by 30px for date header
+                timelineHtml += `
+                    <div class="timeline-hour-line absolute w-full" style="top: ${y}px; height: ${hourHeight}px;">
+                    </div>
+                `;
+            }
+            
+            // Add vertical day separators
+            dateRange.forEach((date, index) => {
+                const x = index * dayWidth;
+                timelineHtml += `
+                    <div class="absolute border-l border-gray-300" style="left: ${x}px; top: 30px; height: ${totalHeight}px;">
                     </div>
                 `;
             });
@@ -238,7 +274,7 @@
                 const dayIndex = dateRange.findIndex(date => date.getTime() === eventDate.getTime());
                 if (dayIndex !== -1) {
                     const x = dayIndex * dayWidth + dayWidth / 2;
-                    const y = event.date.getHours() * hourHeight + (event.date.getMinutes() / 60) * hourHeight;
+                    const y = event.date.getHours() * hourHeight + (event.date.getMinutes() / 60) * hourHeight + 30; // Offset by 30px for date header
                     
                     const timeStr = event.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     timelineHtml += `
@@ -249,11 +285,12 @@
                 }
             });
             
-            timelineHtml += '</div>';
+            timelineHtml += '</div></div>';
             
-            // Add padding to container
+            // Add padding to container with sticky hour labels
             container.innerHTML = `
-                <div class="p-8 pt-12">
+                <div class="relative" style="padding: 1rem;">
+                    ${hourLabelsHtml}
                     ${timelineHtml}
                 </div>
             `;
