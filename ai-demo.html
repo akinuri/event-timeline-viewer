@@ -208,7 +208,7 @@
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
-            const dayWidth = 80; // pixels per day
+            const dayWidth = 50; // pixels per day
             const hourHeight = 24; // pixels per hour
             const totalWidth = dateRange.length * dayWidth;
             const totalHeight = 24 * hourHeight;
@@ -237,8 +237,7 @@
             // Add date labels
             dateRange.forEach((date, index) => {
                 const x = index * dayWidth;
-                const year = String(date.getFullYear()).slice(-2);
-                const dateStr = year + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+                const dateStr = String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
                 timelineHtml += `
                     <div class="absolute text-xs font-medium text-gray-700 px-1 whitespace-nowrap" style="left: ${x + 2}px; top: 8px;">
                         ${dateStr}
@@ -257,11 +256,21 @@
                 `;
             }
             
-            // Add vertical day separators
+            // Add vertical day separators with thicker lines for year boundaries
             dateRange.forEach((date, index) => {
                 const x = index * dayWidth;
+                let borderClass = "border-l border-gray-300";
+                
+                // Check if this is the start of a new year
+                if (index > 0) {
+                    const prevDate = dateRange[index - 1];
+                    if (date.getFullYear() !== prevDate.getFullYear()) {
+                        borderClass = "border-l-2 border-gray-600";
+                    }
+                }
+                
                 timelineHtml += `
-                    <div class="absolute border-l border-gray-300" style="left: ${x}px; top: 30px; height: ${totalHeight}px;">
+                    <div class="absolute ${borderClass}" style="left: ${x}px; top: 30px; height: ${totalHeight}px;">
                     </div>
                 `;
             });
