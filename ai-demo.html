@@ -7,10 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .timeline-hour-line {
-            border-top: 1px solid #e5e7eb;
-        }
-        .timeline-hour-line:nth-child(odd) {
-            background-color: #f9fafb;
+            border-top: 1px solid rgba(229, 231, 235, 0.5);
         }
         .event-dot {
             width: 12px;
@@ -38,6 +35,18 @@
             background: white;
             z-index: 30;
             border-right: 1px solid #e5e7eb;
+        }
+        .day-cycle-bg {
+            --gradient-opacity: 0.1;
+            background: linear-gradient(
+                to bottom,
+                hsla(220, 64%, 33%, var(--gradient-opacity)) 0%,    /* Deep blue - night */
+                hsla(220, 64%, 33%, var(--gradient-opacity)) 35%,    /* Deep blue - night */
+                hsla(43, 96%, 56%, var(--gradient-opacity)) 42%,    /* Yellow - sunrise */
+                hsla(43, 96%, 56%, var(--gradient-opacity)) 73%,    /* Yellow - sunset */
+                hsla(220, 64%, 33%, var(--gradient-opacity)) 80%,   /* Deep blue - night */
+                hsla(220, 64%, 33%, var(--gradient-opacity)) 100%   /* Deep blue - night */
+            );
         }
     </style>
 </head>
@@ -229,7 +238,10 @@
             let timelineHtml = `
                 <!-- Single scrollable container for both day labels and timeline -->
                 <div style="margin-left: 50px; overflow-x: auto; position: relative;">
-                    <div class="relative" style="width: ${totalWidth}px; height: ${totalHeight + 30}px;">
+                    <!-- Day cycle gradient background -->
+                    <div class="absolute day-cycle-bg" style="width: ${totalWidth}px; height: ${totalHeight}px; top: 30px; z-index: 1;"></div>
+                    
+                    <div class="relative" style="width: ${totalWidth}px; height: ${totalHeight + 30}px; z-index: 2;">
                         
                         <!-- Date labels that scroll with content -->
                         <div class="absolute w-full" style="top: 0; height: 30px; background: white; border-bottom: 1px solid #e5e7eb;">`;
