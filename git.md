@@ -59,7 +59,7 @@ git show \
   $(cat hashes.txt) |
 awk '
 /^COMMIT/ {
-  if (NR>1) printf "%s, +%d, -%d\n", date, ins, del
+  if (NR>1) printf "%s, +%d -%d\n", date, ins, del
   split($0,a,"|")
   date=a[2]
   ins=0
@@ -71,7 +71,7 @@ awk '
   del+=$2
 }
 END {
-  printf "%s, +%d, -%d\n", date, ins, del
+  printf "%s, +%d -%d\n", date, ins, del
 }' > dates.txt
 
 ```
