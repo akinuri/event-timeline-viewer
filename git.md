@@ -23,6 +23,8 @@ copy(getColumn(commits, "datetime").join("\n"));
 
 ## Git Log
 
+### Get full summary from hashes
+
 ```bash
 git show \
   --no-patch \
@@ -44,4 +46,10 @@ awk '
 END {
   print hash "|" author "|" date "|" msg "|" "+"ins " -"del
 }'
+```
+
+### Get dates from hashes
+
+```bash
+git log --no-walk --format="%ad" --date=iso $(cat hashes.txt) > dates.txt
 ```
