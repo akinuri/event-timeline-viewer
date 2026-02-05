@@ -10,10 +10,10 @@
             border-top: 1px solid rgba(229, 231, 235, 0.5);
         }
         .event-dot {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            border: 2px solid white;
+            border: 1px solid white;
             position: absolute;
             z-index: 10;
             cursor: pointer;
@@ -146,6 +146,9 @@
                 date: new Date(event.date),
                 name: event.name || 'Event',
                 type: event.type || 'blue',
+                additions: event.additions || 0,
+                deletions: event.deletions || 0,
+                totalChanges: (event.additions || 0) + (event.deletions || 0),
                 id: event.id || Date.now() + Math.random()
             }));
             updateTimeline();
@@ -156,6 +159,9 @@
                 date: new Date(event.date),
                 name: event.name || 'Event',
                 type: event.type || 'blue',
+                additions: event.additions || 0,
+                deletions: event.deletions || 0,
+                totalChanges: (event.additions || 0) + (event.deletions || 0),
                 id: event.id || Date.now() + Math.random()
             });
             updateTimeline();
@@ -223,59 +229,44 @@
         
         function parseEventText(text, eventType = 'blue') {
             // Try to parse different formats
-            let dateTime, name = 'Event';
+            let dateTime, additions = 0, deletions = 0;
             
-                // Format: ISO 8601 - YYYY-MM-DDTHH:MM:SS.sssZ - Event Name
-                const isoWithNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)\s*-\s*(.+)$/);
-                if (isoWithNameMatch) {
-                    dateTime = isoWithNameMatch[1];
-                    name = isoWithNameMatch[2];
+            // Format: datetime + change - YYYY-MM-DD HH:MM:SS +ZZZZ, +x, -y
+            const gitMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4}),\s*\+?(\d+),\s*\-?(\d+)$/);
+            if (gitMatch) {
+                dateTime = gitMatch[1];
+                additions = parseInt(gitMatch[2]);
+                deletions = parseInt(gitMatch[3]);
+            } else {
+                // Format: ISO datetime - YYYY-MM-DDTHH:MM:SS.sssZ
+                const isoMatch = text.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)$/);
+                if (isoMatch) {
+                    dateTime = isoMatch[1];
                 } else {
-                    // Format: ISO 8601 - YYYY-MM-DDTHH:MM:SS.sssZ
-                    const isoMatch = text.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)$/);
-                    if (isoMatch) {
-                        dateTime = isoMatch[1];
+                    // Format: datetime - YYYY-MM-DD HH:MM:SS +ZZZZ
+                    const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})$/);
+                    if (dateMatch) {
+                        dateTime = dateMatch[1];
                     } else {
-                        // Format: YYYY-MM-DD HH:MM:SS +ZZZZ - Event Name
-                        const withNameMatch = text.match(
-                            /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})\s*-\s*(.+)$/,
-                        );
-                        if (withNameMatch) {
-                            dateTime = withNameMatch[1];
-                            name = withNameMatch[2];
-                        } else {
-                            // Format: YYYY-MM-DD HH:MM:SS +ZZZZ
-                            const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})$/);
-                            if (dateMatch) {
-                                dateTime = dateMatch[1];
-                            } else {
-                                // Fallback: try older formats for backward compatibility
-                                const oldWithNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s*-\s*(.+)$/);
-                                if (oldWithNameMatch) {
-                                    dateTime = oldWithNameMatch[1];
-                                    name = oldWithNameMatch[2];
-                                } else {
-                                    const oldDateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
-                                    if (oldDateMatch) {
-                                        dateTime = oldDateMatch[1];
-                                    } else {
-                                        return null;
-                                    }
-                                }
-                            }
-                        }
+                        return null;
                     }
                 }
+            }
             
             const date = new Date(dateTime);
             if (isNaN(date.getTime())) {
                 return null;
             }
             
+            const totalChanges = additions + deletions;
+            
             return {
                 date: date,
-                name: name,
+                name: 'Event',
                 type: eventType,
+                additions: additions,
+                deletions: deletions,
+                totalChanges: totalChanges,
                 id: Date.now() + Math.random()
             };
         }
@@ -392,6 +383,24 @@
                 }
             });
             
+            // First pass: find min and max changes in the data
+            let minChanges = Infinity;
+            let maxChanges = 0;
+            
+            events.forEach(event => {
+                const totalChanges = event.totalChanges || 0;
+                if (totalChanges > 0) {
+                    minChanges = Math.min(minChanges, totalChanges);
+                    maxChanges = Math.max(maxChanges, totalChanges);
+                }
+            });
+            
+            // If no events have changes, set defaults
+            if (minChanges === Infinity) {
+                minChanges = 0;
+                maxChanges = 1;
+            }
+            
             // Add events
             events.forEach(event => {
                 const eventDate = new Date(event.date);
@@ -404,9 +413,39 @@
                     
                     const timeStr = event.date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     const eventType = event.type || 'blue';
+                    
+                    // Simple linear mapping: min changes -> 0.2 opacity, max changes -> 1.0 opacity
+                    const totalChanges = event.totalChanges || 0;
+                    let opacity = 0.75; // Default to 0.75 to see overlays
+                    if (totalChanges > 0 && maxChanges > minChanges) {
+                        // Linear mapping for events with change data
+                        const normalized = (totalChanges - minChanges) / (maxChanges - minChanges);
+                        opacity = 0.2 + normalized * 0.8;
+                    }
+                    // If totalChanges is 0 or all changes are the same, use 0.75 opacity
+                    
+                    // Calculate z-index based on change size (bigger changes on top)
+                    let zIndex = 10; // Base z-index
+                    if (totalChanges > 0 && maxChanges > minChanges) {
+                        // Scale z-index from 10 to 100 based on change size
+                        const normalized = (totalChanges - minChanges) / (maxChanges - minChanges);
+                        zIndex = Math.round(10 + normalized * 90);
+                    } else if (totalChanges > 0) {
+                        zIndex = 100; // High z-index for single change value
+                    }
+                    
+                    // Build tooltip text
+                    let tooltipText = `${timeStr}`;
+                    if (event.additions !== undefined || event.deletions !== undefined) {
+                        tooltipText += `, +${event.additions || 0}, -${event.deletions || 0}`;
+                    }
+                    if (event.name && event.name !== 'Event') {
+                        tooltipText = `${event.name} - ${tooltipText}`;
+                    }
+                    
                     timelineHtml += `
-                        <div class="event-dot ${eventType}" style="left: ${x - 6}px; top: ${y - 6}px;" 
-                             title="${event.name} - ${timeStr}">
+                        <div class="event-dot ${eventType}" style="left: ${x - 6}px; top: ${y - 6}px; opacity: ${opacity}; z-index: ${zIndex};" 
+                             title="${tooltipText}">
                         </div>
                     `;
                 }
