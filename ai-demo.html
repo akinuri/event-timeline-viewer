@@ -225,32 +225,47 @@
             // Try to parse different formats
             let dateTime, name = 'Event';
             
-            // Format: YYYY-MM-DD HH:MM:SS +ZZZZ - Event Name
-            const withNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})\s*-\s*(.+)$/);
-            if (withNameMatch) {
-                dateTime = withNameMatch[1];
-                name = withNameMatch[2];
-            } else {
-                // Format: YYYY-MM-DD HH:MM:SS +ZZZZ
-                const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})$/);
-                if (dateMatch) {
-                    dateTime = dateMatch[1];
+                // Format: ISO 8601 - YYYY-MM-DDTHH:MM:SS.sssZ - Event Name
+                const isoWithNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)\s*-\s*(.+)$/);
+                if (isoWithNameMatch) {
+                    dateTime = isoWithNameMatch[1];
+                    name = isoWithNameMatch[2];
                 } else {
-                    // Fallback: try older formats for backward compatibility
-                    const oldWithNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s*-\s*(.+)$/);
-                    if (oldWithNameMatch) {
-                        dateTime = oldWithNameMatch[1];
-                        name = oldWithNameMatch[2];
+                    // Format: ISO 8601 - YYYY-MM-DDTHH:MM:SS.sssZ
+                    const isoMatch = text.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z)$/);
+                    if (isoMatch) {
+                        dateTime = isoMatch[1];
                     } else {
-                        const oldDateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
-                        if (oldDateMatch) {
-                            dateTime = oldDateMatch[1];
+                        // Format: YYYY-MM-DD HH:MM:SS +ZZZZ - Event Name
+                        const withNameMatch = text.match(
+                            /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})\s*-\s*(.+)$/,
+                        );
+                        if (withNameMatch) {
+                            dateTime = withNameMatch[1];
+                            name = withNameMatch[2];
                         } else {
-                            return null;
+                            // Format: YYYY-MM-DD HH:MM:SS +ZZZZ
+                            const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4})$/);
+                            if (dateMatch) {
+                                dateTime = dateMatch[1];
+                            } else {
+                                // Fallback: try older formats for backward compatibility
+                                const oldWithNameMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s*-\s*(.+)$/);
+                                if (oldWithNameMatch) {
+                                    dateTime = oldWithNameMatch[1];
+                                    name = oldWithNameMatch[2];
+                                } else {
+                                    const oldDateMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})$/);
+                                    if (oldDateMatch) {
+                                        dateTime = oldDateMatch[1];
+                                    } else {
+                                        return null;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
             
             const date = new Date(dateTime);
             if (isNaN(date.getTime())) {
