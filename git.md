@@ -48,6 +48,34 @@ END {
 }'
 ```
 
+### Get dates & changes
+
+```bash
+git show \
+  --no-patch \
+  --pretty=format:"COMMIT|%ad" \
+  --date=iso \
+  --numstat \
+  $(cat hashes.txt) |
+awk '
+/^COMMIT/ {
+  if (NR>1) printf "%s, +%d, -%d\n", date, ins, del
+  split($0,a,"|")
+  date=a[2]
+  ins=0
+  del=0
+  next
+}
+{
+  ins+=$1
+  del+=$2
+}
+END {
+  printf "%s, +%d, -%d\n", date, ins, del
+}' > dates.txt
+
+```
+
 ### Get dates from hashes
 
 ```bash
