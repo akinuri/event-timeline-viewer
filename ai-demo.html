@@ -231,8 +231,8 @@
             // Try to parse different formats
             let dateTime, additions = 0, deletions = 0;
             
-            // Format: datetime + change - YYYY-MM-DD HH:MM:SS +ZZZZ, +x, -y
-            const gitMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4}),\s*\+?(\d+),\s*\-?(\d+)$/);
+            // Format: datetime + change - YYYY-MM-DD HH:MM:SS +ZZZZ, +x -y
+            const gitMatch = text.match(/^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[+\-]\d{4}),\s*\+?(\d+)\s+\-?(\d+)$/);
             if (gitMatch) {
                 dateTime = gitMatch[1];
                 additions = parseInt(gitMatch[2]);
