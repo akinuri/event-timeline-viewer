@@ -72,8 +72,7 @@ awk '
 }
 END {
   printf "%s, +%d -%d\n", date, ins, del
-}' > dates.txt
-
+}' > dates-changes.txt
 ```
 
 ### Get dates from hashes
