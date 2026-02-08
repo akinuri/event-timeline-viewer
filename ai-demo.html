@@ -424,15 +424,9 @@
                     }
                     // If totalChanges is 0 or all changes are the same, use 0.75 opacity
                     
-                    // Calculate z-index based on change size (bigger changes on top)
-                    let zIndex = 10; // Base z-index
-                    if (totalChanges > 0 && maxChanges > minChanges) {
-                        // Scale z-index from 10 to 100 based on change size
-                        const normalized = (totalChanges - minChanges) / (maxChanges - minChanges);
-                        zIndex = Math.round(10 + normalized * 90);
-                    } else if (totalChanges > 0) {
-                        zIndex = 100; // High z-index for single change value
-                    }
+                    // Calculate z-index based on opacity (corresponds directly to visibility)
+                    let zIndex = Math.round(opacity * 1000); // Scale opacity to z-index range
+                    if (zIndex < 10) zIndex = 10; // Ensure minimum z-index
                     
                     // Build tooltip text
                     let tooltipText = `${timeStr}`;
