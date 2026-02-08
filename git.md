@@ -98,3 +98,23 @@ awk '
 { ins+=$1; del+=$2 }
 END { printf "%s, +%d, -%d\n", date, ins, del }' > dates-changes.txt
 ```
+
+### Get dates & changes of the last n commits
+
+```bash
+git show \
+  --no-patch \
+  --pretty=format:"COMMIT|%ad" \
+  --date=iso \
+  --numstat \
+  -n 10 |
+awk '
+/^COMMIT/ {
+  if (NR>1) printf "%s, +%d -%d\n", date, ins, del
+  split($0,a,"|"); date=a[2]
+  ins=0; del=0
+  next
+}
+{ ins+=$1; del+=$2 }
+END { printf "%s, +%d -%d\n", date, ins, del }' > dates-changes.txt
+```
