@@ -390,12 +390,65 @@
             let minChanges = Infinity;
             let maxChanges = 0;
             
+            // Group events into 15-minute time slots
+            const timeSlots = new Map();
+            
             events.forEach(event => {
-                const totalChanges = event.totalChanges || 0;
+                const eventDate = new Date(event.date);
+                const dayKey = `${eventDate.getFullYear()}-${eventDate.getMonth()}-${eventDate.getDate()}`;
+                const hour = eventDate.getHours();
+                const minutes = eventDate.getMinutes();
+                const slot = Math.floor(minutes / 15); // 0, 1, 2, or 3 for each 15-min slot
+                const slotKey = `${dayKey}_${hour}_${slot}`;
+                
+                if (!timeSlots.has(slotKey)) {
+                    timeSlots.set(slotKey, {
+                        date: new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), hour, slot * 15, 0),
+                        additions: 0,
+                        deletions: 0,
+                        events: [],
+                        types: new Set()
+                    });
+                }
+                
+                const timeSlot = timeSlots.get(slotKey);
+                timeSlot.additions += event.additions || 0;
+                timeSlot.deletions += event.deletions || 0;
+                timeSlot.events.push(event);
+                timeSlot.types.add(event.type || 'blue');
+            });
+            
+            // Calculate aggregated events and find min/max
+            const aggregatedEvents = [];
+            timeSlots.forEach(slot => {
+                const totalChanges = slot.additions + slot.deletions;
                 if (totalChanges > 0) {
                     minChanges = Math.min(minChanges, totalChanges);
                     maxChanges = Math.max(maxChanges, totalChanges);
                 }
+                
+                // Determine dominant event type (most common color)
+                let dominantType = 'blue';
+                if (slot.types.size === 1) {
+                    dominantType = Array.from(slot.types)[0];
+                } else {
+                    // If multiple types, count them
+                    const typeCounts = {};
+                    slot.events.forEach(event => {
+                        const type = event.type || 'blue';
+                        typeCounts[type] = (typeCounts[type] || 0) + 1;
+                    });
+                    dominantType = Object.keys(typeCounts).reduce((a, b) => typeCounts[a] > typeCounts[b] ? a : b);
+                }
+                
+                aggregatedEvents.push({
+                    date: slot.date,
+                    additions: slot.additions,
+                    deletions: slot.deletions,
+                    totalChanges: totalChanges,
+                    type: dominantType,
+                    eventCount: slot.events.length
+                });
             });
             
             // If no events have changes, set defaults
@@ -404,8 +457,8 @@
                 maxChanges = 1;
             }
             
-            // Add events to dots container
-            events.forEach(event => {
+            // Add aggregated events to dots container
+            aggregatedEvents.forEach(event => {
                 const eventDate = new Date(event.date);
                 eventDate.setHours(0, 0, 0, 0);
                 
@@ -432,12 +485,9 @@
                     if (zIndex < 10) zIndex = 10; // Ensure minimum z-index
                     
                     // Build tooltip text
-                    let tooltipText = `${timeStr}`;
+                    let tooltipText = `${timeStr} (${event.eventCount} events)`;
                     if (event.additions !== undefined || event.deletions !== undefined) {
                         tooltipText += `, +${event.additions || 0}, -${event.deletions || 0}`;
-                    }
-                    if (event.name && event.name !== 'Event') {
-                        tooltipText = `${event.name} - ${tooltipText}`;
                     }
                     
                     dotsHtml += `
