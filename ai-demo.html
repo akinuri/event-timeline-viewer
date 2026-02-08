@@ -383,6 +383,9 @@
                 }
             });
             
+            // Create dedicated container for event dots
+            let dotsHtml = '';
+            
             // First pass: find min and max changes in the data
             let minChanges = Infinity;
             let maxChanges = 0;
@@ -401,7 +404,7 @@
                 maxChanges = 1;
             }
             
-            // Add events
+            // Add events to dots container
             events.forEach(event => {
                 const eventDate = new Date(event.date);
                 eventDate.setHours(0, 0, 0, 0);
@@ -437,7 +440,7 @@
                         tooltipText = `${event.name} - ${tooltipText}`;
                     }
                     
-                    timelineHtml += `
+                    dotsHtml += `
                         <div class="event-dot ${eventType}" style="left: ${x - 6}px; top: ${y - 6}px; opacity: ${opacity}; z-index: ${zIndex};" 
                              title="${tooltipText}">
                         </div>
@@ -445,7 +448,12 @@
                 }
             });
             
-            timelineHtml += '</div></div>';
+            timelineHtml += `
+                        <!-- Event dots container -->
+                        <div class="absolute" style="width: ${totalWidth}px; height: ${totalHeight + 30}px; top: 0; left: 0; z-index: 1000;">
+                            ${dotsHtml}
+                        </div>
+                    </div></div>`;
             
             // Add padding to container with sticky hour labels
             container.innerHTML = `
