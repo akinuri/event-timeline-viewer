@@ -80,3 +80,21 @@ END {
 ```bash
 git log --no-walk --format="%ad" --date=iso $(cat hashes.txt) > dates.txt
 ```
+
+### Get dates & changes of all commits
+
+```bash
+git log \
+  --format="COMMIT|%ad" \
+  --date=iso \
+  --numstat |
+awk '
+/^COMMIT/ {
+  if (NR>1) printf "%s, +%d, -%d\n", date, ins, del
+  split($0,a,"|"); date=a[2]
+  ins=0; del=0
+  next
+}
+{ ins+=$1; del+=$2 }
+END { printf "%s, +%d, -%d\n", date, ins, del }' > dates-changes.txt
+```
