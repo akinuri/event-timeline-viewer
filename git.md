@@ -8,8 +8,10 @@ for (let commitItemEl of commitItemEls) {
         message: commitItemEl.querySelector("[class*=CommitRow-module__ListItemTitle_]")?.innerText.trim(),
         hash: commitItemEl.querySelectorAll("a")[3].href.match(/\/commits\/([a-z0-9]+)$/)?.[1] ?? null,
         datetime: commitItemEl.querySelector("relative-time").datetime,
-        name: commitItemEl.querySelectorAll("a")[2].innerText.trim(),
+        authors: [],
     };
+    commitItemEl.querySelectorAll(`[data-testid="author-link"]`).forEach(el => commit.authors.push(el.innerText.trim()));
+    commitItemEl.querySelectorAll(`[data-testid="author-avatar"]`).forEach(el => commit.authors.push(el.innerText.trim()));
     commits.push(commit);
 }
 // console.log(commits);
