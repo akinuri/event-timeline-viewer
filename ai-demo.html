@@ -123,6 +123,11 @@
                     class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                     Clear All
                 </button>
+                <button 
+                    onclick="fillDemoEvents()" 
+                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Fill Demo Events
+                </button>
                 
                 <div class="flex items-center gap-2 ml-4">
                     <input 
@@ -184,6 +189,30 @@
             updateTimeline();
         };
         
+        function fillDemoEvents() {
+            const pad = n => String(n).padStart(2, '0');
+            const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            const generate = (count, withChanges) => {
+                const lines = [];
+                for (let i = 0; i < count; i++) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - rand(0, 13));
+                    d.setHours(rand(8, 22), rand(0, 59), rand(0, 59));
+                    const off = -d.getTimezoneOffset();
+                    const sign = off >= 0 ? '+' : '-';
+                    const tz = `${sign}${pad(Math.floor(Math.abs(off) / 60))}${pad(Math.abs(off) % 60)}`;
+                    let line = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())} ${tz}`;
+                    if (withChanges) line += `, +${rand(1, 200)} -${rand(0, 100)}`;
+                    lines.push(line);
+                }
+                return lines.sort().join('\n');
+            };
+            document.getElementById('blueEvents').value = generate(25, true);
+            document.getElementById('greenEvents').value = generate(10, false);
+            document.getElementById('redEvents').value = generate(6, false);
+            loadAllEvents();
+        }
+
         function loadAllEvents() {
             const blueInput = document.getElementById('blueEvents');
             const greenInput = document.getElementById('greenEvents');
